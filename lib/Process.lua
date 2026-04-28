@@ -178,10 +178,11 @@ function Process:DeepCloneTable(Table, Ignore: table?, Visited: table?): table
     Cache[Table] = New
     
     for Key, Value in next, Table do
-        if not (Value table.find(Ignore, Value)) then
+        if not table.find(Ignore, Value) then
         Key = self:CheckValue(Key, Ignore, Cache)
         New[Key] = self:CheckValue(Value, Ignore, Cache)
     end
+end 
     
     if not Visited then
         table.clear(Cache)
