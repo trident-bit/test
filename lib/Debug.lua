@@ -280,10 +280,9 @@ function Debug:DumpRemoteInfo(Remote): table
     }
     
     for AttrName, AttrValue in pairs(Remote:GetAttributes()) do
-		info.Attributes[AttrName] = AttrValue
+		Info.Attributes[AttrName] = AttrValue
 	end
     
-    --// Get class data
     local ClassData = Process.RemoteClassData[Remote.ClassName]
     if ClassData then
         Info.Methods.Send = ClassData.Send
@@ -293,7 +292,6 @@ function Debug:DumpRemoteInfo(Remote): table
     return Info
 end
 
---// Stats
 function Debug:GetStats(): table
     return Process:DeepCloneTable(self.Stats)
 end
