@@ -208,37 +208,32 @@ function Hook:NamecallHook(...)
 end
 
 function Hook:IndexHook(Object, Property)
-    -- Check if accessing a remote's receive property
     if Process:RemoteAllowed(Object, "Receive", Property) then
         local Original = self.OriginalIndex(Object, Property)
-        
-        -- Hook the receive event/callback
+       
         if typeof(Original) == "RBXScriptSignal" then
-            return newproxy(true, {
-                __index = function(_, Index)
-                    if Index == "Connect" or Index == "connect" then
-                        return function(_, Callback)
-                            return Original:Connect(function(...)
-                                -- Log the received data
-                                local Data = {
-                                    Method = Property,
-                                    MetaMethod = "__index",
-                                    TransferType = "Receive",
-                                    IsReceive = true
-                                }
-                                Process:ProcessRemote(Data, Object, ...)
-                                
-                                -- Call original callback
-                                return Callback(...)
-                            end)
-                        end
+            local proxy = newproxy(true)
+            local mt = getmetatable(proxy)
+            mt.__index = function(_, Index)
+                if Index == "Connect" or Index "connect" then
+                    return function(_, Callback)
+                        return Original:Connect(function(...)
+                            local Data = {
+                                Method = Property,
+                                MetaMethod = "__index",
+                                TransferType = "Receive",
+                                IsReceive = true
+                            }
+                            Process:ProcessRemote(Data, Object, ...)
+                            return Callback(...)
+                        end)
                     end
-                    return Original[Index]
                 end
-            })
+                return Original[Index]
+            end
+            return proxy
         end
     end
-    
     return self.OriginalIndex(Object, Property)
 end
 
