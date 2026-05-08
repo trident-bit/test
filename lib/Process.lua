@@ -1,5 +1,5 @@
-type table = {
-    [any]: any
+local Process = {
+  Initialized = true
 }
 
 type RemoteData = {
