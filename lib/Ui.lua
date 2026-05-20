@@ -1,12 +1,9 @@
 local Ui = {}
 
---=====================================================================
---  Internal storage for module references and configuration
---=====================================================================
 Ui._ = {
-    Modules      = nil,   -- Filled by Ui:Init()
-    Services     = nil,   -- Filled by Ui:Init()
-    Configuration= nil,   -- Filled by Ui:Init()
+    Modules      = nil,
+    Services     = nil,
+    Configuration= nil,
     ScreenGui    = nil,
     MainFrame    = nil,
     Content     = nil,
@@ -40,9 +37,6 @@ Ui._ = {
     LogsCount  = 0,
 }
 
---=====================================================================
---  Helper utilities
---=====================================================================
 local function make(obj, props, parent)
     if not obj then return nil end
     local instance = obj.new(props, parent)
@@ -57,9 +51,7 @@ local function deepClone(tbl)
     return copy
 end
 
---=====================================================================
---  COLOR PALETTE (used throughout the UI)
---=====================================================================
+--  COLOR PALETTE 
 local C = {
     TitleBar   = Color3.fromHex("272222"),   -- dark brown
     Toolbar    = Color3.fromHex("c0622a"),   -- orange
@@ -75,37 +67,28 @@ local C = {
     White      = Color3.fromRGB(255,255,255),
 }
 
---=====================================================================
---  PUBLIC API
---=====================================================================
 
---- Initialise the UI module.
 --- @param Data table  { Modules = {...}, Configuration = {...}, Services = {...} }
 function Ui:Init(Data)
     self._.Modules    = Data.Modules     or {}
     self._.Configuration = Data.Configuration or {}
     self._.Services   = Data.Services    or {}
 
-    -- store core services
     self._.RunService   = self._.Services.RunService
     self._.LocalPlayer  = self._.Services.Players.LocalPlayer
     self._.TextService  = self._.Services.TextService
 
-    -- UI placeholders
     self._.ScreenGui    = nil
     self._.MainFrame    = nil
     self._.Content     = nil
 
-    -- bind callbacks later if needed
     return self
 end
 
---- Set the communication channel (a BindableEvent used by Communication.lua)
 function Ui:SetCommChannel(Channel)
     self._.CommChannel = Channel
 end
 
---- Build the main ScreenGui + top‑level Main frame.
 function Ui:CreateMainWindow()
     local services   = self._.Services
     local screenGui  = make("ScreenGui", {
@@ -118,13 +101,13 @@ function Ui:CreateMainWindow()
 
     local mainFrame = make("Frame", {
         Name            = "AlphaSpyWindow",
-        AnchorPoint     = Vector2.new(0.5, 0),               -- bottom‑center
-        Position        = UDim2.new(0.5, 0, 1, -50),          -- 50px above bottom
-        Size            = UDim2.new(0.8, 0, 0.9, 0),          -- generous size
+        AnchorPoint     = Vector2.new(0.5, 0),
+        Position        = UDim2.new(0.5, 0, 1, -50),
+        Size            = UDim2.new(0.8, 0, 0.9, 0),
         BackgroundColor3 = C.TitleBar,
         BorderSizePixel = 0,
         ZIndex          = 10,
-        Visible         = false,               -- hidden until toggled
+        Visible         = false,
     }, screenGui)
 
     self._.MainFrame = mainFrame
@@ -132,15 +115,11 @@ function Ui:CreateMainWindow()
     return self
 end
 
---- Build the tabbed interface, remote list, settings, etc.
 function Ui:CreateWindowContent()
     local window     = self._.MainFrame
     local services   = self._.Services
     local ReGui     = self._.Modules.ReGui
 
-    --=================================================================
-    --  Layout: a vertical List that will hold everything else
-    --=================================================================
     local layout = window:List({
         UiPadding    = 2,
         HorizontalFlex = Enum.UIFlexAlignment.Fill,
@@ -149,9 +128,6 @@ function Ui:CreateWindowContent()
         Fill           = true,
     })
 
-    --=================================================================
-    --  LEFT PANEL – Remote list (scrollable)
-    --=================================================================
     self._.RemotesList = layout:Canvas({
         Scroll      = true,
         UiPadding   = 5,
@@ -160,28 +136,21 @@ function Ui:CreateWindowContent()
         Size        = UDim2.new(0, 150, 1, 0),
     })
 
-    --=================================================================
-    --  RIGHT PANEL – Tab selector + three tabs
-    --=================================================================
     local infoSelector = layout:TabSelector({
         NoAnimation = true,
         Size = UDim2.new(1, -150, 0.4, 0),
     })
     self._.InfoSelector = infoSelector
 
-    -- Build the three tabs
     self:MakeEditorTab(infoSelector)
     self:MakeOptionsTab(infoSelector)
-    self:MakeDebugTab(infoSelector)   -- optional, may be hidden later
-    self:ConsoleTab(infoSelector)     -- always present
-    --=================================================================
-    --  Store canvas layout for later use
-    --=================================================================
+    self:MakeDebugTab(infoSelector)
+    self:ConsoleTab(infoSelector)
+
     self._.CanvasLayout = layout
     return self
 end
 
---- Start a heartbeat coroutine that drains the log queue.
 function Ui:BeginLogService()
     if self._.BeginLogServiceRunning then return self end
 
@@ -197,12 +166,10 @@ function Ui:BeginLogService()
     return self
 end
 
---- Append a log entry to the UI queue.
 function Ui:QueueLog(Data)
     table.insert(self._.LogQueue, Data)
 end
 
---- Process one tick of the log‑queue coroutine.
 function Ui:ProcessLogQueue()
     local queue = self._.LogQueue
     if #queue == 0 then return end
@@ -211,17 +178,14 @@ function Ui:ProcessLogQueue()
         local log = queue[i]
         self:CreateLog(log)
 
-        -- remove processed item
         table.remove(queue, i)
     end
     return self
 end
 
---- Console tab implementation.
 function Ui:ConsoleTab(InfoSelector)
     local tab = InfoSelector:CreateTab{Name = "Console"}
 
-    -- Buttons row
     local btnRow = tab:Row()
     btnRow:Button{
         Text = "Clear",
@@ -241,7 +205,6 @@ function Ui:ConsoleTab(InfoSelector)
     }
     btnRow:Expand()
 
-    -- Actual console view
     local console = tab:Console{
         Text      = "-- Alpha Spy Console",
         ReadOnly  = true,
@@ -256,18 +219,16 @@ function Ui:ConsoleTab(InfoSelector)
     return self
 end
 
---- Make the Debug tab (optional, can be hidden based on flags).
 function Ui:MakeDebugTab(InfoSelector)
     local tab = InfoSelector:CreateTab{Name = "Debug"}
 
-    -- Header
     tab:Label{
         Text = "Debug Tools for Bypass Development",
         TextColor3 = C.White,
     }
     tab:Separator{Text = "Debug Options"}
 
-    -- Placeholder for debug‑related UI (populated later by Flags.lua)
+    -- Placeholder for debug‑related UI (populated later by Flags.lua))
     local debugRow = tab:Row()
     debugRow:Button{
         Text = "Clear History",
@@ -287,7 +248,6 @@ function Ui:MakeDebugTab(InfoSelector)
     return self
 end
 
---- Make the Options tab with a 3‑column grid.
 function Ui:MakeOptionsTab(InfoSelector)
     local tab = InfoSelector:CreateTab{Name = "Options"}
     tab:Separator{Text = "Log Options"}
@@ -295,7 +255,6 @@ function Ui:MakeOptionsTab(InfoSelector)
     tab:Separator{Text = "Filtering"}
     tab:Separator{Text = "Actions"}
 
-    -- Buttons row for actions
     local actionsRow = tab:Row()
     actionsRow:Button{
         Text = "Clear Logs",
@@ -322,12 +281,10 @@ function Ui:MakeOptionsTab(InfoSelector)
     return self
 end
 
---- Make the Editor tab (shows raw remote data & generated scripts).
 function Ui:MakeEditorTab(InfoSelector)
     local DefaultEditorContent = [[-- Welcome to Alpha Spy!]]
     local tab = InfoSelector:CreateTab{Name = "Editor"}
 
-    -- Code editor
     local codeEditor = tab:CodeEditor{
         Fill        = true,
         Editable    = true,
@@ -337,7 +294,6 @@ function Ui:MakeEditorTab(InfoSelector)
     }
     self.CodeEditor = codeEditor
 
-    -- Buttons row
     local btnRow = tab:Row()
     btnRow:Button{
         Text = "Copy",
@@ -372,7 +328,6 @@ function Ui:MakeEditorTab(InfoSelector)
     return self
 end
 
---- Show a modal popup with a list of strings.
 function Ui:ShowModal(lines)
     local window = self._.MainFrame
     if not window then return end
@@ -391,20 +346,10 @@ function Ui:ShowModal(lines)
     }
 end
 
---- Create a log entry in the UI.
 function Ui:CreateLog(Data)
-    -- implementation mirrors the original logic
-    -- (trimmed here for brevity – the full original code is retained unchanged)
-    -- It builds a Header, Selectable, etc. and adds it to the RemotesList.
-    -- All original functionality remains intact, only the surrounding
-    -- structure was moved into methods.
-    -- -----------------------------------------------------------------
-    -- (Paste the full original CreateLog implementation here – omitted
-    --  for brevity in this excerpt.)
-    -- -----------------------------------------------------------------
+
 end
 
---- Clear all logs from the UI.
 function Ui:ClearLogs()
     self._.LogsCount = 0
     if self._.RemotesList then
@@ -414,7 +359,6 @@ function Ui:ClearLogs()
     return self
 end
 
---- Drag‑to‑move implementation (attached to all top‑level windows).
 function Ui:MakeDraggable(handle, root)
     local dragging = false
     local dragStart = nil
@@ -445,7 +389,6 @@ function Ui:MakeDraggable(handle, root)
     end)
 end
 
---- Focus handling for tabs.
 function Ui:ShouldFocus(Tab)
     local infoSel = self._.InfoSelector
     if not infoSel then return true end
@@ -454,7 +397,6 @@ function Ui:ShouldFocus(Tab)
     return infoSel:CompareTabs(active, Tab)
 end
 
---- Remove the previously focused tab.
 function Ui:RemovePreviousTab()
     local active = self._.ActiveData
     if not active then return false end
@@ -466,14 +408,13 @@ function Ui:RemovePreviousTab()
     return true
 end
 
---- Helper to create UI elements from a key/value table.
 function Ui:CreateElements(Parent, Options)
     local OptionTypes = self._.OptionTypes or {}
     for Name, Data in pairs(Options) do
         local Value = Data.Value
         local Type  = typeof(Value)
         local DType = Data.Class or OptionTypes[Type]
-        if not DType then DType = "TextButton" end   -- fallback
+        if not DType then DType = "TextButton" end
 
         if not Data.Label then Data.Label = Name end
 
@@ -484,12 +425,10 @@ function Ui:CreateElements(Parent, Options)
     end
 end
 
---- Drag system registration (called after UI is built).
 function Ui:RegisterDragSystem()
     local window = self._.MainFrame
     if not window then return end
     self:MakeDraggable(window, window)
 end
 
---- Finalise module – expose an object containing all methods.
 return Ui
