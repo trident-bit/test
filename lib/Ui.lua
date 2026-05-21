@@ -37,11 +37,23 @@ Ui._ = {
 	LogsCount = 0,
 }
 
-local function make(obj, props, parent)
-	if not obj then
+local function make(className, props, parent)
+	if not className then
 		return nil
 	end
-	local instance = obj.new(props, parent)
+
+	local instance = Instance.new(className)
+
+	if props then
+		for property, value in pairs(props) do
+			instance[property] = value
+		end
+	end
+
+	if parent then
+		instance.Parent = parent
+	end
+
 	return instance
 end
 
